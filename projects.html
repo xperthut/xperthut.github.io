@@ -1,0 +1,133 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Md Kamruzzaman (Methun) - GitHub Projects</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Helvetica', sans-serif; scroll-behavior: smooth; }
+        .header-image { background-image: url('https://images.pexels.com/photos/2152/sky-earth-space-working.jpg?auto=compress&cs=tinysrgb&w=1920'); background-size: cover; background-position: center; height: 300px; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <!-- Header Image -->
+    <div class="header-image"></div>
+
+    <!-- Navigation -->
+    <header class="bg-blue-600 text-white sticky top-0 z-10 shadow-md">
+        <nav class="container mx-auto p-4 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <img src="https://github.com/xperthut/xperthut.github.io/raw/main/img/me_snl.png" alt="Profile" class="w-12 h-12 rounded-full" onerror="this.style.display='none'">
+                <h1 class="text-xl font-bold">Md Kamruzzaman (Methun)</h1>
+            </div>
+            <div class="space-x-4">
+                <a href="index.html#about" class="hover:underline">About</a>
+                <a href="index.html#experience" class="hover:underline">Experience</a>
+                <a href="projects.html" class="hover:underline">Projects</a>
+                <a href="index.html#resume" class="hover:underline">Resume</a>
+                <a href="index.html#contact" class="hover:underline">Contact</a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Projects Section -->
+    <section id="projects" class="py-12 bg-white">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold mb-4">All GitHub Projects</h2>
+            <div id="all-projects" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-blue-600 text-white py-4">
+        <div class="container mx-auto px-4 text-center">
+            <p>© 2025 Md Kamruzzaman (Methun). All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Fallback project data if GitHub API fails
+        const fallbackProjects = [
+            { name: 'Project 1', description: 'Sample project from GitHub.', html_url: 'https://github.com/xperthut', fork: false, archived: false, openGraphImageUrl: 'https://images.pexels.com/photos/373543/pexels-photo-373543.jpeg' },
+            { name: 'Project 2', description: 'Another sample project.', html_url: 'https://github.com/xperthut', fork: false, archived: false, openGraphImageUrl: 'https://images.pexels.com/photos/373543/pexels-photo-373543.jpeg' },
+        ];
+
+        // Function to render projects
+        function renderProjects(projects) {
+            const allContainer = document.getElementById('all-projects');
+            allContainer.innerHTML = '';
+
+            projects.forEach(project => {
+                const thumbnail = project.openGraphImageUrl || 'https://images.pexels.com/photos/373543/pexels-photo-373543.jpeg';
+                allContainer.innerHTML += `
+                    <div class="border p-4 rounded-lg shadow-md">
+                        <img src="${thumbnail}" alt="${project.name} thumbnail" class="w-full h-40 object-cover rounded-t-lg mb-4">
+                        <h3 class="text-lg font-semibold">${project.name}</h3>
+                        <p class="text-gray-600">${project.description || 'No description available'}</p>
+                        <a href="${project.html_url}" target="_blank" class="text-blue-600 hover:underline">View on GitHub</a>
+                    </div>
+                `;
+            });
+        }
+
+        // Fetch GitHub projects (non-forked, non-archived only)
+        fetch('https://api.github.com/users/xperthut/repos')
+            .then(res => {
+                if (!res.ok) throw new Error('GitHub API request failed');
+                return res.json();
+            })
+            .then(data => {
+                if (Array.isArray(data) && data.length > 0) {
+                    const ownedActiveProjects = data.filter(repo => !repo.fork && !repo.archived);
+                    renderProjects(ownedActiveProjects.length > 0 ? ownedActiveProjects : fallbackProjects);
+                } else {
+                    renderProjects(fallbackProjects);
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching GitHub repos:', err);
+                renderProjects(fallbackProjects);
+            });
+    </script>
+</body>
+</html>
