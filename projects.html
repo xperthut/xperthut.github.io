@@ -109,6 +109,7 @@
 
             projects.forEach(project => {
                 const thumbnail = project.openGraphImageUrl || 'https://images.pexels.com/photos/373543/pexels-photo-373543.jpeg?v=20250608';
+                console.write(project.name);
                 allContainer.innerHTML += `
                     <div class="border p-4 rounded-lg shadow-md">
                         <img src="${thumbnail}" alt="${project.name} thumbnail" class="w-full h-40 object-cover rounded-t-lg mb-4">
